@@ -38,7 +38,7 @@ export const AppProvider = ({ children }) => {
   const [addSuucess, setAddSuucess] = useState(false);
 
   const [adminData, setAdminData] = useState([]);
-  const [fetchloading, setfetchloading] = useState(false);
+  const [fetchloading, setfetchloading] = useState(true);
   const [mailerror, setmailerror] = useState(false);
   const [userexisterror, setuserexisterror] = useState(false);
   const [currentuser, setcurrentuser] = useState();
@@ -49,7 +49,7 @@ export const AppProvider = ({ children }) => {
     storageBucket: "placexp-leaderboard.appspot.com",
     messagingSenderId: process.env.REACT_APP_MESSAGINGSENDERID,
     appId: process.env.REACT_APP_APPID,
-    measurementId: "G-Q3D8BN7R81"
+    measurementId: "G-Q3D8BN7R81",
   };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -60,7 +60,7 @@ export const AppProvider = ({ children }) => {
     const res = await signOut(auth);
     setadminstatus(false);
   };
-  const signInWithGoogle = async() => {
+  const signInWithGoogle = async () => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
       const user = res.user;
@@ -91,13 +91,13 @@ export const AppProvider = ({ children }) => {
     const docs = await getDocs(q);
     if (docs.docs.length === 0) {
       setuserexisterror(false);
-  
-    await setDoc(doc(db, "members", regno.toString()), {
-      name: name,
-      regno: regno,
-      points: 0,
-    });
-     
+
+      await setDoc(doc(db, "members", regno.toString()), {
+        name: name,
+        regno: regno,
+        points: 0,
+      });
+
       setAddSuucess(true);
       setremovePointsuccess(false);
       setremovesuccess(false);
@@ -107,103 +107,106 @@ export const AppProvider = ({ children }) => {
       setuserexisterror(true);
       setAddSuucess(false);
     }
-    setTimeout(()=>{
-      window.location.reload(false)
-    },2000);
+    setTimeout(() => {
+      window.location.reload(false);
+    }, 2000);
   };
 
-  const removeMember = async(regno) => {
-   console.log("reached for",regno)
+  const removeMember = async (regno) => {
+    console.log("reached for", regno);
     //   setremovesuccess(true);
-   await deleteDoc(doc(db,"members",regno.toString()))
-    
+    await deleteDoc(doc(db, "members", regno.toString()));
+
     setremovesuccess(true);
     setAddSuucess(false);
     setremovePointsuccess(false);
     setAddPointSuucess(false);
-    setTimeout(()=>{
-      window.location.reload(false)
-    },2000);
-
+    setTimeout(() => {
+      window.location.reload(false);
+    }, 2000);
   };
   const addPoints = async (regno, exist, addVal) => {
-  
-   
-    await setDoc(doc(db, "members", regno.toString()), {
-     
-      points:  parseInt(exist) +parseInt(addVal),
-    },{merge:true});
+    await setDoc(
+      doc(db, "members", regno.toString()),
+      {
+        points: parseInt(exist) + parseInt(addVal),
+      },
+      { merge: true }
+    );
     setAddPointSuucess(true);
     setremovePointsuccess(false);
     setAddSuucess(false);
     setremovesuccess(false);
-    setTimeout(()=>{
-      window.location.reload(false)
-    },2000);
-   
+    setTimeout(() => {
+      window.location.reload(false);
+    }, 2000);
   };
   const minusPoints = async (regno, exist, minVal) => {
-  
-    await setDoc(doc(db, "members", regno.toString()), {
-     
-      points: parseInt(exist)-parseInt(minVal),
-    },{merge:true});
+    await setDoc(
+      doc(db, "members", regno.toString()),
+      {
+        points: parseInt(exist) - parseInt(minVal),
+      },
+      { merge: true }
+    );
     setremovePointsuccess(true);
     setAddPointSuucess(false);
     setAddSuucess(false);
     setremovesuccess(false);
-    setTimeout(()=>{
-      window.location.reload(false)
-    },2000);
+    setTimeout(() => {
+      window.location.reload(false);
+    }, 2000);
   };
-
 
   useEffect(() => {
     const getData = async () => {
-        let max = [0,0,0];
+      let max = [0, 0, 0];
       if (data.length == 0) {
-        console.log("enytered")
-        const q = query(collection(db, "members".toString()), orderBy("points"));
+        console.log("enytered");
+        const q = query(
+          collection(db, "members".toString()),
+          orderBy("points")
+        );
         const docs = await getDocs(q);
-     
+
         // getmaxvals(docs.docs.data);
         console.log(docs);
         let tmp = [];
 
-        docs.forEach((item)=>{
-            tmp.push(item.data());
-            let pt = item.data().points;
-            console.log("iterating",pt,max[0],max[1],max[2])
-        
-            let m1 = max[0];
-            let m2 = max[1];
-            let m3 = max[2];
-            console.log(pt>m1,(pt>m3 &&pt >= m2  && pt<m1), (pt >= max3 && pt <m2 && pt <m1))
-            if (pt > m1) {
-             max[2] = m2;
-             max[1] = m1;
-             max[0] = pt;
-              } 
-               if (pt>m3 &&pt >= m2  && pt<m1) {
+        docs.forEach((item) => {
+          tmp.push(item.data());
+          let pt = item.data().points;
+          console.log("iterating", pt, max[0], max[1], max[2]);
 
+          let m1 = max[0];
+          let m2 = max[1];
+          let m3 = max[2];
+          console.log(
+            pt > m1,
+            pt > m3 && pt >= m2 && pt < m1,
+            pt >= max3 && pt < m2 && pt < m1
+          );
+          if (pt > m1) {
+            max[2] = m2;
+            max[1] = m1;
+            max[0] = pt;
+          }
+          if (pt > m3 && pt >= m2 && pt < m1) {
             max[2] = m2;
             max[1] = pt;
-                
-              } 
-               if (pt >= m3 && pt <m2 && pt <m1) {
-
-                max[2] = pt;
-              } else {
-                //nothing
-              }
-              
-        })
+          }
+          if (pt >= m3 && pt < m2 && pt < m1) {
+            max[2] = pt;
+          } else {
+            //nothing
+          }
+        });
         console.log(tmp);
         setdata(tmp.reverse());
+        setfetchloading(false);
         setmax1(max[0]);
         setmax2(max[1]);
         setmax3(max[2]);
-        setfetchloading(false);
       }
     };
     const getAdminData = async () => {
@@ -213,7 +216,7 @@ export const AppProvider = ({ children }) => {
         where("mail", "==", user.email)
       );
       const docs = await getDocs(q);
-      console.log("wssddd",docs.docs.length);
+      console.log("wssddd", docs.docs.length);
       if (docs.docs.length === 0) {
         setmailerror(true);
         setadminstatus(false);
@@ -227,16 +230,14 @@ export const AppProvider = ({ children }) => {
         setmailerror(false);
       }
     };
-    getData()
-    if(loading){
-        return
+    getData();
+    if (loading) {
+      return;
     }
-    if (user){
-getAdminData()
+    if (user) {
+      getAdminData();
     }
-    
-
-  }, [user,loading]);
+  }, [user, loading]);
 
   return (
     <AppConfig.Provider
@@ -252,7 +253,6 @@ getAdminData()
         addingLoad,
         addSuucess,
         removeSuuccess,
-    
 
         addPointSuucess,
         removePointSuuccess,
@@ -266,8 +266,7 @@ getAdminData()
         minusPoints,
       }}
     >
-      {" "}
-      {children}{" "}
+      {children}
     </AppConfig.Provider>
   );
 };
