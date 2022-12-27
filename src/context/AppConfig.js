@@ -20,9 +20,12 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
+import useMessage from "antd/es/message/useMessage";
 export const AppConfig = createContext();
 
 export const AppProvider = ({ children }) => {
+  const [messageApi, contextHolder] = useMessage();
+
   const [adminStatus, setadminstatus] = useState(false);
   const [max1, setmax1] = useState(0);
   const [max2, setmax2] = useState(0);
@@ -41,7 +44,6 @@ export const AppProvider = ({ children }) => {
   const [fetchloading, setfetchloading] = useState(true);
   const [mailerror, setmailerror] = useState(false);
   const [userexisterror, setuserexisterror] = useState(false);
-  const [currentuser, setcurrentuser] = useState();
   const firebaseConfig = {
     apiKey: process.env.REACT_APP_APIKEY,
     authDomain: process.env.REACT_APP_AUTHDOMAIN,
@@ -98,33 +100,40 @@ export const AppProvider = ({ children }) => {
         points: 0,
       });
 
+      messageApi.open({
+        type: "success",
+        content: "User added Successfully !",
+      });
+
       setAddSuucess(true);
       setremovePointsuccess(false);
       setremovesuccess(false);
       setAddPointSuucess(false);
       setAddingLoad(false);
     } else {
+      messageApi.open({
+        type: "error",
+        content: "User already exist !",
+      });
       setuserexisterror(true);
       setAddSuucess(false);
     }
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
   };
 
   const removeMember = async (regno) => {
-    console.log("reached for", regno);
-    //   setremovesuccess(true);
     await deleteDoc(doc(db, "members", regno.toString()));
+
+    messageApi.open({
+      type: "success",
+      content: "Member successfully removed !",
+    });
 
     setremovesuccess(true);
     setAddSuucess(false);
     setremovePointsuccess(false);
     setAddPointSuucess(false);
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
   };
+
   const addPoints = async (regno, exist, addVal) => {
     await setDoc(
       doc(db, "members", regno.toString()),
@@ -137,9 +146,11 @@ export const AppProvider = ({ children }) => {
     setremovePointsuccess(false);
     setAddSuucess(false);
     setremovesuccess(false);
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
+
+    messageApi.open({
+      type: "success",
+      content: "Points successfully added !",
+    });
   };
   const minusPoints = async (regno, exist, minVal) => {
     await setDoc(
@@ -153,9 +164,11 @@ export const AppProvider = ({ children }) => {
     setAddPointSuucess(false);
     setAddSuucess(false);
     setremovesuccess(false);
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
+
+    messageApi.open({
+      type: "success",
+      content: "Points removed successfully !",
+    });
   };
 
   useEffect(() => {
@@ -201,7 +214,7 @@ export const AppProvider = ({ children }) => {
             //nothing
           }
         });
-        console.log(tmp);
+        console.log({ tmp });
         setdata(tmp.reverse());
         setfetchloading(false);
         setmax1(max[0]);
@@ -267,6 +280,7 @@ export const AppProvider = ({ children }) => {
       }}
     >
       {children}
+      {contextHolder}
     </AppConfig.Provider>
   );
 };

@@ -1,21 +1,29 @@
-import React, { useContext, useEffect, useState } from "react";
+import Card from "antd/es/card/Card";
+import React, { useContext, useRef, useState } from "react";
+
+import {
+  PlusCircleTwoTone,
+  MinusCircleTwoTone,
+  DeleteTwoTone,
+} from "@ant-design/icons";
+
 import { AppConfig } from "../../context/AppConfig";
 
-import { Loader } from "../Loader";
+import Popconfirm from "antd/es/popconfirm";
+import Tooltip from "antd/es/tooltip";
+import Statistic from "antd/es/statistic";
+import InputNumber from "antd/es/input-number";
+import Modal from "antd/es/modal/Modal";
+import useMessage from "antd/es/message/useMessage";
+
 export const LeaderboardCard = (props) => {
+  const [messageApi, contextHolder] = useMessage();
+
   const [removeloading, setremoveloading] = useState(false);
   const [addingPointLoad, setAddingPointLoad] = useState(false);
   const [removePointloading, setremovePointloading] = useState(false);
-  const {
-    adminData,
-    max1,
-    max2,
-    max3,
-    removeMember,
-    adminStatus,
-    addPoints,
-    minusPoints,
-  } = useContext(AppConfig);
+  const { removeMember, adminStatus, addPoints, minusPoints } =
+    useContext(AppConfig);
   const [removetoggel, setremovetoggle] = useState(false);
   const [addptToggle, setAddPtToggle] = useState(false);
 
@@ -23,208 +31,190 @@ export const LeaderboardCard = (props) => {
   const [addPt, setaddpt] = useState(0);
   const [minPt, setMinPt] = useState(0);
 
-  console.log(max1, max2, max3);
+  const actions = [
+    <Popconfirm
+      placement="top"
+      title="Are you sure you want to remove ?"
+      onConfirm={commitRemoval}
+      onCancel={toggleRemove}
+      okText="Yes"
+      cancelText="Cancel"
+      okButtonProps={{ className: "text-black" }}
+      cancelButtonProps={{ danger: true }}
+    >
+      <Tooltip placement="bottom" title="Delete">
+        <DeleteTwoTone onClick={toggleRemove} key="Delete" />
+      </Tooltip>
+    </Popconfirm>,
+    <Tooltip placement="bottom" title="Reduce points">
+      <MinusCircleTwoTone onClick={toggleMinPt} key="Reduce points" />
+    </Tooltip>,
+    <Tooltip placement="bottom" title="Add points">
+      <PlusCircleTwoTone onClick={toggleAddPt} key="Add points" />
+    </Tooltip>,
+  ];
 
-  const [bg, setbg] = useState("bg-[rgba(0,0,0,0.8)]");
-
-  useEffect(() => {
-    if (props.points === max1) {
-      setbg("bg-[rgba(185,135,70,0.8)]");
-    } else if (props.points === max2) {
-      setbg("bg-[rgba(190,195,196,0.8)]");
-    } else if (props.points == max3) {
-      setbg("bg-[rgba(119,43,43,0.8)]");
-    } else {
-      setbg("bg-[rgba(0,0,0,0.8)]");
-    }
-  }, []);
-  let validate = typeof addPt === "number" && typeof minPt === "number";
-  const toggleMinPt = () => {
+  function toggleMinPt() {
     setMinPtToggle(!minPtToggle);
     setremovetoggle(false);
     setAddPtToggle(false);
-  };
-  const toggleAddPt = () => {
+  }
+
+  function toggleAddPt() {
     setMinPtToggle(false);
     setAddPtToggle(!addptToggle);
     setremovetoggle(false);
-  };
-  const toggleRemove = () => {
+  }
+
+  function toggleRemove() {
     setMinPtToggle(false);
     setremovetoggle(!removetoggel);
     setAddPtToggle(false);
-  };
-  const commitAddPt = async () => {
+  }
+
+  async function commitAddPt() {
     setAddingPointLoad(true);
     if (addPt > 0) {
       await addPoints(props.regno, props.points, addPt);
       setAddPtToggle(false);
     } else {
-      alert("Enter valid addValue greater than 0!");
+      messageApi.open({
+        type: "error",
+        content: "Enter a number greater than 0!",
+      });
     }
+
     setAddingPointLoad(false);
-  };
-  const commitMinPt = async () => {
+  }
+
+  async function commitMinPt() {
     setremovePointloading(true);
+
+    console.log({ points: props.points - addPt });
+
+    if (props.points - addPt < 0) {
+      messageApi.open({
+        type: "warning",
+        content: `Enter a number greater than 0 and less than ${props.points}`,
+      });
+
+      return;
+    }
+
     if (minPt > 0) {
       await minusPoints(props.regno, props.points, minPt);
       setMinPtToggle(false);
     } else {
-      alert("Enter valid minus value greater than 0!");
+      messageApi.open({
+        type: "error",
+        content: "Enter a number greater than 0!",
+      });
     }
+
     setremovePointloading(false);
-  };
-  const commitRemoval = async () => {
+  }
+
+  async function commitRemoval() {
     setremoveloading(true);
 
     await removeMember(props.regno);
     setremovetoggle(false);
     setremoveloading(false);
-  };
+  }
+
+  const isAddPointsOpen = adminStatus && addptToggle && !addingPointLoad;
+  const isReducePointsOpen = adminStatus && minPtToggle && !removePointloading;
+
   return (
-    <div className="flex flex-col mt-8 font-[Nunito] ">
-      <div
-        className={`flex flex-row justify-between text-white font-bold p-5 ${bg} z-50 relative`}
+    <>
+      <Card
+        className="flex flex-col"
+        cover={
+          <img
+            className="h-60 object-fill"
+            alt="example"
+            src="https://preview.keenthemes.com/metronic-v4/theme/assets/pages/media/profile/profile_user.jpg"
+          />
+        }
+        actions={actions}
       >
-        <div className="font-xl"> {props.regno} </div>
-        <div className="font-xl"> {props.name} </div>
-        <div className="font-xl"> {props.points} </div>
-      </div>
-      <div
-        className={`flex flex-row justify-evenly flex-wrap text-white z-50 relative ${bg} `}
-      >
-        {adminStatus &&
-          !removeloading &&
-          !addingPointLoad &&
-          !removePointloading &&
-          !removetoggel &&
-          !addptToggle &&
-          !minPtToggle && (
-            <button
-              className="bg-neutral-500 rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1"
-              onClick={toggleRemove}
-            >
-              {" "}
-              REMOVE{" "}
-            </button>
-          )}
-        {/* {adminStatus && removeloading && <Loader/> } */}
+        <div className="grid">
+          <h1 className="text-3xl font-bold"> {props.name} </h1>
+          <h2 className="text-xl font-medium uppercase"> {props.regno} </h2>
+        </div>
 
-        {adminStatus &&
-          !removetoggel &&
-          !addptToggle &&
-          !minPtToggle &&
-          !removeloading &&
-          !addingPointLoad &&
-          !removePointloading && (
-            <button
-              className="bg-neutral-500  rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1"
-              onClick={toggleAddPt}
-            >
-              {" "}
-              + POINTS{" "}
-            </button>
-          )}
-        {/* {adminStatus && addingPointLoad && <Loader/> } */}
+        <div className="mt-5 w-full flex text-right justify-end">
+          <Statistic className="text-xs" value={props.points} suffix="Points" />
+        </div>
+      </Card>
 
-        {adminStatus &&
-          !removetoggel &&
-          !addptToggle &&
-          !minPtToggle &&
-          !removeloading &&
-          !addingPointLoad &&
-          !removePointloading && (
-            <button
-              className="bg-neutral-500  rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1"
-              onClick={toggleMinPt}
-            >
-              {" "}
-              - POINTS{" "}
-            </button>
-          )}
-        {/* {adminStatus && removePointloading && <Loader/> } */}
-      </div>
-      <div
-        className={` text-center  z-50 relative text-white font-semibold text-xl ${bg}  `}
+      <Modal
+        title={isAddPointsOpen ? "Add Points" : "Reduce Points"}
+        centered
+        closable={false}
+        open={isAddPointsOpen || isReducePointsOpen}
+        onCancel={isAddPointsOpen ? toggleAddPt : toggleMinPt}
+        onOk={isAddPointsOpen ? commitAddPt : commitMinPt}
+        okText={isAddPointsOpen ? "Add" : "Reduce"}
+        okButtonProps={{ className: "text-black", type: "primary" }}
+        cancelButtonProps={{ danger: true }}
       >
-        {adminStatus && removetoggel && !removeloading && (
-          <>
-            {" "}
-            <div> Are you sure you want to remove ? </div>{" "}
-            <div>
-              {" "}
-              <button
-                onClick={commitRemoval}
-                className="bg-green-700 text-black p-1"
-              >
-                Yes
-              </button>{" "}
-              <button
-                className="bg-red-700 text-black p-1"
-                onClick={toggleRemove}
-              >
-                Cancel
-              </button>{" "}
-            </div>{" "}
-          </>
-        )}
-        {adminStatus && addptToggle && !addingPointLoad && (
-          <>
-            {" "}
-            <div> Points to add:- </div>
-            <input
-              className="text-black font-semibold text-xl"
-              type="number"
-              value={addPt}
-              onChange={(e) => setaddpt(e.target.value)}
-            />{" "}
-            <div> </div>{" "}
-            <div>
-              {" "}
-              <button
-                onClick={commitAddPt}
-                className="bg-green-700 text-black p-1"
-              >
-                ADD
-              </button>{" "}
-              <button
-                className="bg-red-700 text-black p-1"
-                onClick={toggleAddPt}
-              >
-                CANCEL
-              </button>{" "}
-            </div>{" "}
-          </>
-        )}
-        {adminStatus && minPtToggle && !removePointloading && (
-          <>
-            {" "}
-            <div> Points to remove :- </div>
-            <input
-              className="text-black font-semibold text-xl"
-              type="number"
-              value={minPt}
-              onChange={(e) => setMinPt(e.target.value)}
-            />{" "}
-            <div> </div>{" "}
-            <div>
-              {" "}
-              <button
-                onClick={commitMinPt}
-                className="bg-green-700 text-black p-1"
-              >
-                Deduct
-              </button>{" "}
-              <button
-                className="bg-red-700 text-black p-1"
-                onClick={toggleMinPt}
-              >
-                CANCEL
-              </button>{" "}
-            </div>{" "}
-          </>
-        )}
-      </div>
-    </div>
+        <InputNumber
+          className="w-full text-lg p-2"
+          min={0}
+          max={100}
+          value={isAddPointsOpen ? addPt : minPt}
+          onChange={(e) => {
+            if (isAddPointsOpen) setaddpt(e);
+            else setMinPt(e);
+          }}
+        />
+      </Modal>
+
+      {contextHolder}
+    </>
   );
 };
+
+// <div
+//   className={`flex flex-row justify-evenly flex-wrap text-white z-50 relative`}
+// >
+//   {adminStatus &&
+//     !removeloading &&
+//     !addingPointLoad &&
+//     !removePointloading &&
+//     !removetoggel &&
+//     !addptToggle &&
+//     !minPtToggle && (
+//       <button
+//         className="bg-neutral-500 rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1"
+//         onClick={toggleRemove}
+//       >
+//         REMOVE
+//       </button>
+//     )}
+
+//   {adminStatus &&
+//     !removetoggel &&
+//     !addptToggle &&
+//     !minPtToggle &&
+//     !removeloading &&
+//     !addingPointLoad &&
+//     !removePointloading && (
+//       <button className="bg-neutral-500  rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1">
+//         + POINTS
+//       </button>
+//     )}
+
+//   {adminStatus &&
+//     !removetoggel &&
+//     !addptToggle &&
+//     !minPtToggle &&
+//     !removeloading &&
+//     !addingPointLoad &&
+//     !removePointloading && (
+//       <button className="bg-neutral-500  rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1">
+//         - POINTS
+//       </button>
+//     )}
+// </div>;
