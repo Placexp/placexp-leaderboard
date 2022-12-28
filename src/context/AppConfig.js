@@ -1,65 +1,39 @@
 import React, { createContext, useEffect, useState } from "react";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import {
-  GoogleAuthProvider,
-  getAuth,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
   query,
   getDocs,
   collection,
   where,
-  addDoc,
   deleteDoc,
   setDoc,
   orderBy,
   doc,
-  getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
+import useMessage from "antd/es/message/useMessage";
+import { auth, db } from "../lib/firebase";
+
 export const AppConfig = createContext();
 
 export const AppProvider = ({ children }) => {
+  const [messageApi, contextHolder] = useMessage();
   const [adminStatus, setadminstatus] = useState(false);
-  const [max1, setmax1] = useState(0);
-  const [max2, setmax2] = useState(0);
-  const [removeSuuccess, setremovesuccess] = useState(false);
-
-  const [addPointSuucess, setAddPointSuucess] = useState(false);
-  const [removePointSuuccess, setremovePointsuccess] = useState(false);
-
-  const [max3, setmax3] = useState(0);
-  const [adminfetching, setadminfetching] = useState(false);
   const [data, setdata] = useState([]);
   const [addingLoad, setAddingLoad] = useState(false);
-  const [addSuucess, setAddSuucess] = useState(false);
-
   const [adminData, setAdminData] = useState([]);
   const [fetchloading, setfetchloading] = useState(true);
   const [mailerror, setmailerror] = useState(false);
-  const [userexisterror, setuserexisterror] = useState(false);
-  const [currentuser, setcurrentuser] = useState();
-  const firebaseConfig = {
-    apiKey: process.env.REACT_APP_APIKEY,
-    authDomain: process.env.REACT_APP_AUTHDOMAIN,
-    projectId: "placexp-leaderboard",
-    storageBucket: "placexp-leaderboard.appspot.com",
-    messagingSenderId: process.env.REACT_APP_MESSAGINGSENDERID,
-    appId: process.env.REACT_APP_APPID,
-    measurementId: "G-Q3D8BN7R81",
-  };
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+
   const googleProvider = new GoogleAuthProvider();
   const [user, loading] = useAuthState(auth);
+
   const signOut = async () => {
-    const res = await signOut(auth);
+    await signOut(auth);
     setadminstatus(false);
   };
+
   const signInWithGoogle = async () => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
@@ -69,18 +43,16 @@ export const AppProvider = ({ children }) => {
         where("mail", "==", user.email)
       );
       const docs = await getDocs(q);
-      console.log(docs.docs.data);
+
       if (docs.docs.length === 0) {
         setadminstatus(false);
         setmailerror(true);
-        // await signOut();
       } else {
         setAdminData(docs.docs.data);
         setadminstatus(true);
         setmailerror(false);
       }
     } catch (err) {
-      console.error(err);
       alert(err.message);
     }
   };
@@ -90,41 +62,35 @@ export const AppProvider = ({ children }) => {
     const q = query(collection(db, "members"), where("regno", "==", regno));
     const docs = await getDocs(q);
     if (docs.docs.length === 0) {
-      setuserexisterror(false);
-
       await setDoc(doc(db, "members", regno.toString()), {
         name: name,
         regno: regno,
         points: 0,
       });
 
-      setAddSuucess(true);
-      setremovePointsuccess(false);
-      setremovesuccess(false);
-      setAddPointSuucess(false);
+      messageApi.open({
+        type: "success",
+        content: "User added Successfully !",
+      });
+
       setAddingLoad(false);
     } else {
-      setuserexisterror(true);
-      setAddSuucess(false);
+      messageApi.open({
+        type: "error",
+        content: "User already exist !",
+      });
     }
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
   };
 
   const removeMember = async (regno) => {
-    console.log("reached for", regno);
-    //   setremovesuccess(true);
     await deleteDoc(doc(db, "members", regno.toString()));
 
-    setremovesuccess(true);
-    setAddSuucess(false);
-    setremovePointsuccess(false);
-    setAddPointSuucess(false);
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
+    messageApi.open({
+      type: "success",
+      content: "Member successfully removed !",
+    });
   };
+
   const addPoints = async (regno, exist, addVal) => {
     await setDoc(
       doc(db, "members", regno.toString()),
@@ -133,14 +99,13 @@ export const AppProvider = ({ children }) => {
       },
       { merge: true }
     );
-    setAddPointSuucess(true);
-    setremovePointsuccess(false);
-    setAddSuucess(false);
-    setremovesuccess(false);
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
+
+    messageApi.open({
+      type: "success",
+      content: "Points successfully added !",
+    });
   };
+
   const minusPoints = async (regno, exist, minVal) => {
     await setDoc(
       doc(db, "members", regno.toString()),
@@ -149,68 +114,33 @@ export const AppProvider = ({ children }) => {
       },
       { merge: true }
     );
-    setremovePointsuccess(true);
-    setAddPointSuucess(false);
-    setAddSuucess(false);
-    setremovesuccess(false);
-    setTimeout(() => {
-      window.location.reload(false);
-    }, 2000);
+
+    messageApi.open({
+      type: "success",
+      content: "Points removed successfully !",
+    });
   };
 
+  function fetchMembers() {
+    const q = query(
+      collection(db, "members".toString()),
+      orderBy("points", "desc")
+    );
+
+    onSnapshot(q, (querySnapshot) => {
+      const members = [];
+      querySnapshot.forEach((doc) => {
+        members.push(doc.data());
+      });
+
+      setdata(members);
+
+      setfetchloading(false);
+    });
+  }
+
   useEffect(() => {
-    const getData = async () => {
-      let max = [0, 0, 0];
-      if (data.length == 0) {
-        console.log("enytered");
-        const q = query(
-          collection(db, "members".toString()),
-          orderBy("points")
-        );
-        const docs = await getDocs(q);
-
-        // getmaxvals(docs.docs.data);
-        console.log(docs);
-        let tmp = [];
-
-        docs.forEach((item) => {
-          tmp.push(item.data());
-          let pt = item.data().points;
-          console.log("iterating", pt, max[0], max[1], max[2]);
-
-          let m1 = max[0];
-          let m2 = max[1];
-          let m3 = max[2];
-          console.log(
-            pt > m1,
-            pt > m3 && pt >= m2 && pt < m1,
-            pt >= max3 && pt < m2 && pt < m1
-          );
-          if (pt > m1) {
-            max[2] = m2;
-            max[1] = m1;
-            max[0] = pt;
-          }
-          if (pt > m3 && pt >= m2 && pt < m1) {
-            max[2] = m2;
-            max[1] = pt;
-          }
-          if (pt >= m3 && pt < m2 && pt < m1) {
-            max[2] = pt;
-          } else {
-            //nothing
-          }
-        });
-        console.log(tmp);
-        setdata(tmp.reverse());
-        setfetchloading(false);
-        setmax1(max[0]);
-        setmax2(max[1]);
-        setmax3(max[2]);
-      }
-    };
     const getAdminData = async () => {
-      setadminfetching(true);
       const q = query(
         collection(db, "admins"),
         where("mail", "==", user.email)
@@ -220,17 +150,15 @@ export const AppProvider = ({ children }) => {
       if (docs.docs.length === 0) {
         setmailerror(true);
         setadminstatus(false);
-        setadminfetching(false);
       } else {
-        //NAME,mail,designation
-        //members :- name,regno,points
         setAdminData(docs.docs.data);
         setadminstatus(true);
-        setadminfetching(false);
         setmailerror(false);
       }
     };
-    getData();
+
+    fetchMembers();
+
     if (loading) {
       return;
     }
@@ -244,19 +172,8 @@ export const AppProvider = ({ children }) => {
       value={{
         adminStatus,
         signInWithGoogle,
-        max1,
-        max2,
-        max3,
-        userexisterror,
-        adminfetching,
         data,
         addingLoad,
-        addSuucess,
-        removeSuuccess,
-
-        addPointSuucess,
-        removePointSuuccess,
-
         adminData,
         fetchloading,
         mailerror,
@@ -267,9 +184,7 @@ export const AppProvider = ({ children }) => {
       }}
     >
       {children}
+      {contextHolder}
     </AppConfig.Provider>
   );
 };
-// {{adminStatus,adminfetching,data,addingLoad,addSuucess,removeSuuccess,removeloading,addingPointLoad
-//   , addPointSuucess,removePointSuuccess,removePointloading,adminData,fetchloading,mailerror,signInWithGoogle,addMember,removeMember,
-//   addPoints,minusPoints}}
