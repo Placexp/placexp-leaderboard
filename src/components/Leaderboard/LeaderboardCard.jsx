@@ -19,7 +19,6 @@ import { motion } from "framer-motion";
 export const LeaderboardCard = (props) => {
   const [messageApi, contextHolder] = useMessage();
 
-  const [removeloading, setremoveloading] = useState(false);
   const [addingPointLoad, setAddingPointLoad] = useState(false);
   const [removePointloading, setremovePointloading] = useState(false);
   const { removeMember, adminStatus, addPoints, minusPoints } =
@@ -127,11 +126,8 @@ export const LeaderboardCard = (props) => {
   }
 
   async function commitRemoval() {
-    setremoveloading(true);
-
     await removeMember(props.regno);
     setremovetoggle(false);
-    setremoveloading(false);
   }
 
   const isAddPointsOpen = adminStatus && addptToggle && !addingPointLoad;
@@ -151,7 +147,7 @@ export const LeaderboardCard = (props) => {
             src="https://preview.keenthemes.com/metronic-v4/theme/assets/pages/media/profile/profile_user.jpg"
           />
         }
-        actions={actions}
+        actions={adminStatus ? actions : []}
       >
         <motion.div
           initial={{ x: -10 }}
@@ -204,46 +200,3 @@ export const LeaderboardCard = (props) => {
     </>
   );
 };
-
-// <div
-//   className={`flex flex-row justify-evenly flex-wrap text-white z-50 relative`}
-// >
-//   {adminStatus &&
-//     !removeloading &&
-//     !addingPointLoad &&
-//     !removePointloading &&
-//     !removetoggel &&
-//     !addptToggle &&
-//     !minPtToggle && (
-//       <button
-//         className="bg-neutral-500 rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1"
-//         onClick={toggleRemove}
-//       >
-//         REMOVE
-//       </button>
-//     )}
-
-//   {adminStatus &&
-//     !removetoggel &&
-//     !addptToggle &&
-//     !minPtToggle &&
-//     !removeloading &&
-//     !addingPointLoad &&
-//     !removePointloading && (
-//       <button className="bg-neutral-500  rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1">
-//         + POINTS
-//       </button>
-//     )}
-
-//   {adminStatus &&
-//     !removetoggel &&
-//     !addptToggle &&
-//     !minPtToggle &&
-//     !removeloading &&
-//     !addingPointLoad &&
-//     !removePointloading && (
-//       <button className="bg-neutral-500  rounded-md hover:bg-black hover:text-white font-semibold text-black p-2 mb-1">
-//         - POINTS
-//       </button>
-//     )}
-// </div>;
