@@ -1,6 +1,5 @@
 import Card from "antd/es/card/Card";
-import React, { useContext, useRef, useState } from "react";
-
+import React, { useContext, useState } from "react";
 import {
   PlusCircleTwoTone,
   MinusCircleTwoTone,
@@ -15,6 +14,7 @@ import Statistic from "antd/es/statistic";
 import InputNumber from "antd/es/input-number";
 import Modal from "antd/es/modal/Modal";
 import useMessage from "antd/es/message/useMessage";
+import { motion } from "framer-motion";
 
 export const LeaderboardCard = (props) => {
   const [messageApi, contextHolder] = useMessage();
@@ -43,14 +43,26 @@ export const LeaderboardCard = (props) => {
       cancelButtonProps={{ danger: true }}
     >
       <Tooltip placement="bottom" title="Delete">
-        <DeleteTwoTone onClick={toggleRemove} key="Delete" />
+        <DeleteTwoTone
+          onClick={toggleRemove}
+          style={{ fontSize: "18px" }}
+          key="Delete"
+        />
       </Tooltip>
     </Popconfirm>,
     <Tooltip placement="bottom" title="Reduce points">
-      <MinusCircleTwoTone onClick={toggleMinPt} key="Reduce points" />
+      <MinusCircleTwoTone
+        style={{ fontSize: "18px" }}
+        onClick={toggleMinPt}
+        key="Reduce points"
+      />
     </Tooltip>,
     <Tooltip placement="bottom" title="Add points">
-      <PlusCircleTwoTone onClick={toggleAddPt} key="Add points" />
+      <PlusCircleTwoTone
+        style={{ fontSize: "18px" }}
+        onClick={toggleAddPt}
+        key="Add points"
+      />
     </Tooltip>,
   ];
 
@@ -130,7 +142,10 @@ export const LeaderboardCard = (props) => {
       <Card
         className="flex flex-col"
         cover={
-          <img
+          <motion.img
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
             className="h-60 object-fill"
             alt="example"
             src="https://preview.keenthemes.com/metronic-v4/theme/assets/pages/media/profile/profile_user.jpg"
@@ -138,14 +153,28 @@ export const LeaderboardCard = (props) => {
         }
         actions={actions}
       >
-        <div className="grid">
-          <h1 className="text-3xl font-bold"> {props.name} </h1>
-          <h2 className="text-xl font-medium uppercase"> {props.regno} </h2>
-        </div>
+        <motion.div
+          initial={{ x: -10 }}
+          whileInView={{ x: 0 }}
+          transition={{ duration: 1 }}
+          viewport={{ once: false }}
+          className="grid"
+        >
+          <h1 className="text-3xl font-bold">{props.name}</h1>
+          <h2 className="text-xl font-medium uppercase text-gray-400">
+            {props.regno}
+          </h2>
+        </motion.div>
 
-        <div className="mt-5 w-full flex text-right justify-end">
+        <motion.div
+          initial={{ x: 10 }}
+          whileInView={{ x: 0 }}
+          transition={{ duration: 1 }}
+          viewport={{ once: false }}
+          className="mt-5 w-full flex text-right justify-end"
+        >
           <Statistic className="text-xs" value={props.points} suffix="Points" />
-        </div>
+        </motion.div>
       </Card>
 
       <Modal

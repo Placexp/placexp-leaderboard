@@ -32,7 +32,7 @@ export const PageLayout = ({ children }) => {
   return (
     <>
       <Layout className="flex flex-col min-h-screen bg-[#4334a7]">
-        <Header className="!px-5 py-2 !bg-[#4334a7]/80 backdrop-blur-xl sticky top-0 w-full z-50 flex justify-between items-center">
+        <Header className="!px-5 py-2 !bg-[#4334a7]/70 backdrop-blur-xl sticky top-0 w-full z-50 flex justify-between items-center">
           <img src="/assets/placexp.png" className="h-full rounded-md" />
 
           <div className="flex gap-2">
