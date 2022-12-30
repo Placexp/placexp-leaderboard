@@ -89,12 +89,38 @@ export const AppProvider = ({ children }) => {
     return fileName;
   };
 
-  const addMember = async (name, regno, file) => {
+  const addMember = async (name, regno, file, onSuccess) => {
     setAddingLoad(true);
     const q = query(collection(db, "members"), where("regno", "==", regno));
     const docs = await getDocs(q);
 
     if (docs.docs.length === 0) {
+      if (!name) {
+        messageApi.open({
+          type: "error",
+          content: `Name field shouldn't be empty`,
+        });
+
+        return;
+      }
+
+      if (!regno) {
+        messageApi.open({
+          type: "error",
+          content: `Regno field shouldn't be empty`,
+        });
+
+        return;
+      }
+
+      if (!file || file.length === 0) {
+        messageApi.open({
+          type: "error",
+          content: "Add a profile image",
+        });
+
+        return;
+      }
       const fileName = await addImage(regno, file);
 
       await setDoc(doc(db, "members", regno.toString()), {
@@ -110,12 +136,15 @@ export const AppProvider = ({ children }) => {
       });
 
       setAddingLoad(false);
-    } else {
-      messageApi.open({
-        type: "error",
-        content: "User already exist !",
-      });
+      onSuccess?.();
+
+      return;
     }
+
+    messageApi.open({
+      type: "error",
+      content: "User already exist !",
+    });
   };
 
   const removeMember = async (regno) => {

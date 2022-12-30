@@ -35,12 +35,9 @@ export const Navbar = () => {
   };
 
   const commitAddMember = () => {
-    if (addingName && addingRegNo && addingProfileImage) {
-      setaddMemToggle(false);
-      addMember(addingName, addingRegNo, addingProfileImage);
-    } else {
-      alert("Enter valid name and regno !");
-    }
+    addMember(addingName, addingRegNo, addingProfileImage, () => {
+      setaddMemToggle(true);
+    });
   };
 
   return (
@@ -95,11 +92,14 @@ export const Navbar = () => {
         title={"Add Members"}
         centered
         closable={false}
-        open={adminStatus && addMemtoggle && !addingLoad}
+        open={adminStatus && addMemtoggle}
         onCancel={toggleAddMem}
         onOk={commitAddMember}
         okText="Add"
-        okButtonProps={{ className: "text-black", type: "primary" }}
+        okButtonProps={{
+          className: "text-black",
+          type: "primary",
+        }}
         cancelButtonProps={{ danger: true }}
       >
         <Form
