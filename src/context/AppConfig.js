@@ -15,7 +15,7 @@ import {
   doc,
   onSnapshot,
 } from "firebase/firestore";
-import { ref, uploadBytesResumable } from "firebase/storage";
+import { ref, uploadBytesResumable, deleteObject } from "firebase/storage";
 import { useAuthState } from "react-firebase-hooks/auth";
 import useMessage from "antd/es/message/useMessage";
 import { auth, db, storage } from "../lib/firebase";
@@ -149,6 +149,16 @@ export const AppProvider = ({ children }) => {
 
   const removeMember = async (regno) => {
     await deleteDoc(doc(db, "members", regno.toString()));
+
+    const profileImgRef = ref(storage, `images/${regno}`);
+    deleteObject(profileImgRef)
+      .then((_) => {})
+      .catch((err) => {
+        messageApi.open({
+          type: "warning",
+          content: "Profile images doesn't exist",
+        });
+      });
 
     messageApi.open({
       type: "success",

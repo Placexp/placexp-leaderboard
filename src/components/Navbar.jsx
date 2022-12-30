@@ -36,7 +36,7 @@ export const Navbar = () => {
 
   const commitAddMember = () => {
     addMember(addingName, addingRegNo, addingProfileImage, () => {
-      setaddMemToggle(true);
+      setaddMemToggle(false);
     });
   };
 
