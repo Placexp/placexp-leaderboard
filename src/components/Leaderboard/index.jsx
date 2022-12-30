@@ -3,9 +3,10 @@ import { LeaderboardCard } from "./LeaderboardCard";
 import { AppConfig } from "../../context/AppConfig";
 import { motion } from "framer-motion";
 import AutoComplete from "antd/es/auto-complete";
+import Spin from "antd/es/spin";
 
 export const LeaderBoard = () => {
-  const { data } = useContext(AppConfig);
+  const { data, fetchloading } = useContext(AppConfig);
   const [searchQuery, setSearchQuery] = useState("");
 
   const options = data.map((e) => ({ value: e.name }));
@@ -25,6 +26,8 @@ export const LeaderBoard = () => {
     );
     setMembersName(filteredMembers);
   };
+
+  if (fetchloading) return <Spin className="mt-10" size="large" />;
 
   const filteredMembers = data.filter(({ name }) =>
     searchQuery === "All"
@@ -49,7 +52,7 @@ export const LeaderBoard = () => {
             key={item.regno}
             initial={{ y: 20 }}
             whileInView={{ y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
             <LeaderboardCard {...item} />

@@ -9,9 +9,7 @@ export const PageLayout = ({ children }) => {
     <Layout className="flex flex-col min-h-screen bg-indigo-400">
       <Navbar />
 
-      <Content className="p-5 flex flex-col">
-        <div className="flex-1">{children}</div>
-      </Content>
+      <Content className="p-2 sm:p-5 flex flex-col">{children}</Content>
 
       <Footer className="!bg-indigo-600 !text-white">
         <h1 className="font-semibold text-base">
