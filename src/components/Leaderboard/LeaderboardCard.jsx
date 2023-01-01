@@ -1,5 +1,5 @@
 import Card from "antd/es/card/Card";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   PlusCircleTwoTone,
   MinusCircleTwoTone,
@@ -15,6 +15,7 @@ import InputNumber from "antd/es/input-number";
 import Modal from "antd/es/modal/Modal";
 import useMessage from "antd/es/message/useMessage";
 import { motion } from "framer-motion";
+import { getImage } from "../../utils/getImage";
 
 export const LeaderboardCard = (props) => {
   const [messageApi, contextHolder] = useMessage();
@@ -24,11 +25,17 @@ export const LeaderboardCard = (props) => {
   const { removeMember, adminStatus, addPoints, minusPoints } =
     useContext(AppConfig);
   const [removetoggel, setremovetoggle] = useState(false);
+  const [profileImage, setProfileImage] = useState("");
   const [addptToggle, setAddPtToggle] = useState(false);
 
   const [minPtToggle, setMinPtToggle] = useState(false);
   const [addPt, setaddpt] = useState(0);
   const [minPt, setMinPt] = useState(0);
+
+  useEffect(() => {
+    if (props?.imagePath)
+      getImage(props.imagePath).then((url) => setProfileImage(url));
+  }, []);
 
   const actions = [
     <Popconfirm
@@ -101,8 +108,6 @@ export const LeaderboardCard = (props) => {
   async function commitMinPt() {
     setremovePointloading(true);
 
-    console.log({ points: props.points - addPt });
-
     if (props.points - addPt < 0) {
       messageApi.open({
         type: "warning",
@@ -136,7 +141,7 @@ export const LeaderboardCard = (props) => {
   return (
     <>
       <Card
-        className="flex flex-col"
+        className="flex flex-col bg-gray-100"
         cover={
           <motion.img
             initial={{ opacity: 0 }}
@@ -144,7 +149,10 @@ export const LeaderboardCard = (props) => {
             transition={{ duration: 0.5 }}
             className="h-60 object-fill"
             alt="example"
-            src="https://preview.keenthemes.com/metronic-v4/theme/assets/pages/media/profile/profile_user.jpg"
+            src={
+              profileImage ||
+              "https://preview.keenthemes.com/metronic-v4/theme/assets/pages/media/profile/profile_user.jpg"
+            }
           />
         }
         actions={adminStatus ? actions : []}
@@ -153,7 +161,7 @@ export const LeaderboardCard = (props) => {
           initial={{ x: -10 }}
           whileInView={{ x: 0 }}
           transition={{ duration: 1 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           className="grid"
         >
           <h1 className="text-3xl font-bold">{props.name}</h1>
@@ -166,7 +174,7 @@ export const LeaderboardCard = (props) => {
           initial={{ x: 10 }}
           whileInView={{ x: 0 }}
           transition={{ duration: 1 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           className="mt-5 w-full flex text-right justify-end"
         >
           <Statistic className="text-xs" value={props.points} suffix="Points" />

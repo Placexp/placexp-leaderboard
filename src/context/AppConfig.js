@@ -1,5 +1,9 @@
 import React, { createContext, useEffect, useState } from "react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut as googleSignOut,
+} from "firebase/auth";
 import {
   query,
   getDocs,
@@ -11,9 +15,10 @@ import {
   doc,
   onSnapshot,
 } from "firebase/firestore";
+import { ref, uploadBytesResumable, deleteObject } from "firebase/storage";
 import { useAuthState } from "react-firebase-hooks/auth";
 import useMessage from "antd/es/message/useMessage";
-import { auth, db } from "../lib/firebase";
+import { auth, db, storage } from "../lib/firebase";
 
 export const AppConfig = createContext();
 
@@ -22,19 +27,26 @@ export const AppProvider = ({ children }) => {
   const [adminStatus, setadminstatus] = useState(false);
   const [data, setdata] = useState([]);
   const [addingLoad, setAddingLoad] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [adminData, setAdminData] = useState([]);
   const [fetchloading, setfetchloading] = useState(true);
   const [mailerror, setmailerror] = useState(false);
 
   const googleProvider = new GoogleAuthProvider();
-  const [user, loading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
 
   const signOut = async () => {
-    await signOut(auth);
+    await googleSignOut(auth);
     setadminstatus(false);
+
+    messageApi.open({
+      type: "success",
+      content: "Logged out successfully",
+    });
   };
 
   const signInWithGoogle = async () => {
+    setIsLoggingIn(true);
     try {
       const res = await signInWithPopup(auth, googleProvider);
       const user = res.user;
@@ -52,19 +64,69 @@ export const AppProvider = ({ children }) => {
         setadminstatus(true);
         setmailerror(false);
       }
+
+      messageApi.open({
+        type: "success",
+        content: "Logged in successfully",
+      });
     } catch (err) {
-      alert(err.message);
+      messageApi.open({
+        type: "error",
+        content: err.message,
+      });
     }
+
+    setIsLoggingIn(false);
   };
 
-  const addMember = async (name, regno) => {
+  const addImage = async (regno, file) => {
+    const fileName = `images/${regno}`;
+
+    const storageRef = ref(storage, fileName);
+
+    uploadBytesResumable(storageRef, file);
+
+    return fileName;
+  };
+
+  const addMember = async (name, regno, file, onSuccess) => {
     setAddingLoad(true);
     const q = query(collection(db, "members"), where("regno", "==", regno));
     const docs = await getDocs(q);
+
     if (docs.docs.length === 0) {
+      if (!name) {
+        messageApi.open({
+          type: "error",
+          content: `Name field shouldn't be empty`,
+        });
+
+        return;
+      }
+
+      if (!regno) {
+        messageApi.open({
+          type: "error",
+          content: `Regno field shouldn't be empty`,
+        });
+
+        return;
+      }
+
+      if (!file || file.length === 0) {
+        messageApi.open({
+          type: "error",
+          content: "Add a profile image",
+        });
+
+        return;
+      }
+      const fileName = await addImage(regno, file);
+
       await setDoc(doc(db, "members", regno.toString()), {
-        name: name,
-        regno: regno,
+        name,
+        regno,
+        imagePath: fileName,
         points: 0,
       });
 
@@ -74,16 +136,29 @@ export const AppProvider = ({ children }) => {
       });
 
       setAddingLoad(false);
-    } else {
-      messageApi.open({
-        type: "error",
-        content: "User already exist !",
-      });
+      onSuccess?.();
+
+      return;
     }
+
+    messageApi.open({
+      type: "error",
+      content: "User already exist !",
+    });
   };
 
   const removeMember = async (regno) => {
     await deleteDoc(doc(db, "members", regno.toString()));
+
+    const profileImgRef = ref(storage, `images/${regno}`);
+    deleteObject(profileImgRef)
+      .then((_) => {})
+      .catch((err) => {
+        messageApi.open({
+          type: "warning",
+          content: "Profile images doesn't exist",
+        });
+      });
 
     messageApi.open({
       type: "success",
@@ -127,11 +202,15 @@ export const AppProvider = ({ children }) => {
       orderBy("points", "desc")
     );
 
-    onSnapshot(q, (querySnapshot) => {
+    onSnapshot(q, async (querySnapshot) => {
       const members = [];
-      querySnapshot.forEach((doc) => {
-        members.push(doc.data());
+      querySnapshot.forEach(async (doc) => {
+        const member = doc.data();
+
+        members.push({ ...member });
       });
+
+      console.log({ members });
 
       setdata(members);
 
@@ -139,38 +218,33 @@ export const AppProvider = ({ children }) => {
     });
   }
 
-  useEffect(() => {
-    const getAdminData = async () => {
-      const q = query(
-        collection(db, "admins"),
-        where("mail", "==", user.email)
-      );
-      const docs = await getDocs(q);
-      console.log("wssddd", docs.docs.length);
-      if (docs.docs.length === 0) {
-        setmailerror(true);
-        setadminstatus(false);
-      } else {
-        setAdminData(docs.docs.data);
-        setadminstatus(true);
-        setmailerror(false);
-      }
-    };
+  const getAdminData = async () => {
+    const q = query(collection(db, "admins"), where("mail", "==", user.email));
+    const docs = await getDocs(q);
 
+    if (docs.docs.length === 0) {
+      setmailerror(true);
+      setadminstatus(false);
+    } else {
+      setAdminData(docs.docs.data);
+      setadminstatus(true);
+      setmailerror(false);
+    }
+  };
+
+  useEffect(() => {
     fetchMembers();
 
-    if (loading) {
-      return;
-    }
     if (user) {
       getAdminData();
     }
-  }, [user, loading]);
+  }, [user]);
 
   return (
     <AppConfig.Provider
       value={{
         adminStatus,
+        signOut,
         signInWithGoogle,
         data,
         addingLoad,
@@ -181,6 +255,7 @@ export const AppProvider = ({ children }) => {
         removeMember,
         addPoints,
         minusPoints,
+        isLoggingIn,
       }}
     >
       {children}
